@@ -2,10 +2,11 @@
 
 Aplikacja z prostym GUI do szybkiej konfiguracji świeżo zainstalowanego Windows 11:
 
-- **Aplikacje (winget)** – Brave, Steam, Discord, PyCharm, Git, Visual Studio Code, Docker Desktop, IntelliJ IDEA, Claude, Spotify (+ opcjonalnie Claude Code).
+- **Aplikacje (winget)** – Brave, Steam, Discord, PyCharm, Git, Visual Studio Code, Docker Desktop, IntelliJ IDEA, Claude, Spotify, FACEIT Anti-Cheat, Python 3.14 (+ opcjonalnie Claude Code, klient FACEIT, Python Install Manager).
 - **Ustawienia Windows** – prywatność, menu Start, pasek zadań, motyw ciemny, akceleracja myszy, klawisze trwałe, plan zasilania. Pozycje zaznaczone domyślnie odpowiadają ustawieniom wyłączonym na komputerze wzorcowym.
 - **Brave** – ustawienie jako domyślna przeglądarka, polityki prywatności (P3A, ping statystyk, metryki, Web Discovery, Rewards, Wallet, VPN, Leo, News, Talk…), import zakładek z pliku.
 - **Pliki i zakładki** – dowolne pliki, foldery i linki, które mają trafić na nowy komputer w wybrane miejsce (Pulpit, Dokumenty, `%APPDATA%`, `D:\Gry`…), oraz plik zakładek do Brave.
+- **Podzespoły** (panel po prawej) – spis sprzętu zbierany przez CIM/WMI w PowerShellu: procesor (rdzenie, taktowanie, cache), RAM (moduły, typ DDR, MHz faktyczne i nominalne, sloty), karty graficzne (VRAM, sterownik, tryb), płyta główna i BIOS, dyski fizyczne i woluminy, zasilanie (bateria, plan; zasilacza ATX nie da się odczytać programowo), monitory, karty sieciowe, urządzenia audio. Przyciski **Odśwież / Kopiuj / Zapisz…**.
 
 Wszystko wykonuje się jednym kliknięciem **Start**. Bez zewnętrznych zależności – czysty PowerShell 5.1 + WinForms, działa na świeżym Windows 11.
 
@@ -37,6 +38,7 @@ lib\Tweaks.ps1        ustawienia Windows (rejestr, powercfg)
 lib\Brave.ps1         polityki Brave + domyślna przeglądarka
 lib\Bookmarks.ps1     import zakładek (HTML Netscape / JSON Chromium) do profilu Brave
 lib\Payload.ps1       pliki/foldery/linki do skopiowania (payload\manifest.json)
+lib\Hardware.ps1      spis podzespołów (CIM/WMI) – sekcje panelu „Podzespoły”
 lib\Winget.ps1        wykrywanie i bootstrap winget, instalacja pakietów
 lib\Common.ps1        log, rejestr, uruchamianie procesów bez blokowania GUI
 lib\SFTA.ps1          biblioteka PS-SFTA (MIT, DanysysTeam) – ustawianie domyślnych aplikacji w Windows 10/11
@@ -52,7 +54,7 @@ W `lib\Catalog.ps1` dopisz wiersz, np.:
 @{ Id = 'obs'; Name = 'OBS Studio'; WingetId = 'OBSProject.OBSStudio'; Default = $true; Description = 'Nagrywanie ekranu.' }
 ```
 
-ID pakietu sprawdzisz poleceniem `winget search <nazwa>`. Pole `Scope = 'user'` wymusza instalację bez uprawnień administratora (potrzebne np. dla Spotify).
+ID pakietu sprawdzisz poleceniem `winget search <nazwa>`. Pole `Scope = 'user'` wymusza instalację bez uprawnień administratora (potrzebne np. dla Spotify). Pole `Override = '...'` przekazuje własne przełączniki instalatora (`winget --override`), np. dla Pythona `/quiet InstallAllUsers=1 PrependPath=1`, żeby `python` był od razu w PATH.
 
 ## Uwagi
 
@@ -64,6 +66,18 @@ ID pakietu sprawdzisz poleceniem `winget search <nazwa>`. Pole `Scope = 'user'` 
 - **Docker Desktop** – wymaga WSL2 i restartu; aplikacja zaproponuje restart na końcu.
 - **winget** – jeśli na świeżym systemie go brakuje, aplikacja próbuje kolejno: rejestracji pakietu App Installer, naprawy modułem `Microsoft.WinGet.Client`, pobrania instalatora z `aka.ms/getwinget`.
 - **Dane diagnostyczne** – na Windows 11 Home minimalny poziom to „wymagane” (1); aplikacja ustawia właśnie ten poziom.
+
+## Repozytorium
+
+Kod mieszka w <https://github.com/kaamara/FreshSetup> (prywatne). Na nowym komputerze wystarczy:
+
+```powershell
+git clone https://github.com/kaamara/FreshSetup.git
+```
+
+Uwaga: `payload\` i `logs\` są w `.gitignore`, więc **Twoje pliki i zakładki nie trafiają do repozytorium**. To celowe – repo trzyma tylko kod, a prywatne dane przenosisz sam (pendrive, chmura) albo dodajesz od nowa w aplikacji. Jeśli kiedyś zechcesz mimo wszystko wersjonować konkretną rzecz, wymuś to jawnie: `git add -f payload/bookmarks/bookmarks.html`.
+
+Pliki `.ps1` muszą zachować BOM UTF-8 i nie mogą być normalizowane – pilnuje tego `.gitattributes` (`* -text`).
 
 ## Tryb testowy
 

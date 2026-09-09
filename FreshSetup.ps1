@@ -31,8 +31,17 @@ try {
     Add-Type -Namespace FreshSetup -Name Dpi -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
     [FreshSetup.Dpi]::SetProcessDPIAware() | Out-Null
 } catch { }
+try {
+    Add-Type -Namespace FreshSetup -Name Native -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);'
+} catch { }
 
-foreach ($lib in 'SFTA', 'Common', 'Winget', 'Catalog', 'Tweaks', 'Brave', 'Bookmarks', 'Payload') {
+function Set-ScrollTop {
+    # Przewija RichTextBox na samą górę (ScrollToCaret bywa ignorowane, gdy kontrolka nie ma fokusu): WM_VSCROLL + SB_TOP.
+    param([Windows.Forms.RichTextBox]$Box)
+    try { [void][FreshSetup.Native]::SendMessage($Box.Handle, 0x115, [IntPtr]6, [IntPtr]::Zero) } catch { }
+}
+
+foreach ($lib in 'SFTA', 'Common', 'Winget', 'Catalog', 'Tweaks', 'Brave', 'Bookmarks', 'Payload', 'Hardware') {
     . (Join-Path $Script:AppRoot "lib\$lib.ps1")
 }
 Initialize-Log | Out-Null
@@ -369,8 +378,8 @@ function New-FilesColumn {
 $form = New-Object Windows.Forms.Form
 $form.Text = 'FreshSetup – konfiguracja nowego komputera'
 $wa = [Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-$form.Size = [Drawing.Size]::new([Math]::Min(1340, $wa.Width - 40), [Math]::Min(880, $wa.Height - 40))
-$form.MinimumSize = [Drawing.Size]::new(1000, 660)
+$form.Size = [Drawing.Size]::new([Math]::Min(1720, $wa.Width - 40), [Math]::Min(900, $wa.Height - 40))
+$form.MinimumSize = [Drawing.Size]::new(1150, 660)
 $form.StartPosition = 'CenterScreen'
 $form.BackColor = $Script:Theme.Bg
 $form.ForeColor = $Script:Theme.Fg
@@ -379,7 +388,8 @@ $Script:Ui.Form = $form
 
 $root = New-Object Windows.Forms.TableLayoutPanel
 $root.Dock = 'Fill'; $root.ColumnCount = 1; $root.RowCount = 7
-$root.Padding = [Windows.Forms.Padding]::new(14, 10, 14, 10)
+$root.Padding = [Windows.Forms.Padding]::new(14, 10, 8, 10)
+$root.Margin = [Windows.Forms.Padding]::new(0)
 [void]$root.RowStyles.Add((New-RowStyle Auto))        # nagłówek
 [void]$root.RowStyles.Add((New-RowStyle Percent 60))  # listy
 [void]$root.RowStyles.Add((New-RowStyle Auto))        # opis
@@ -504,7 +514,110 @@ $root.Controls.Add($opts, 0, 3)
 $root.Controls.Add($prog, 0, 4)
 $root.Controls.Add($rtb, 0, 5)
 $root.Controls.Add($btnRow, 0, 6)
-$form.Controls.Add($root)
+
+# ---------------------------------------------------------------- panel „Podzespoły” (prawa strona)
+$Script:HwFont     = [Drawing.Font]::new('Segoe UI', 9)
+$Script:HwFontBold = [Drawing.Font]::new('Segoe UI Semibold', 10)
+$Script:HardwareText = ''
+$hwPanel = New-Object Windows.Forms.TableLayoutPanel
+$hwPanel.Dock = 'Fill'; $hwPanel.ColumnCount = 1; $hwPanel.RowCount = 3
+$hwPanel.Margin = [Windows.Forms.Padding]::new(0, 10, 0, 10)
+[void]$hwPanel.RowStyles.Add((New-RowStyle Auto))
+[void]$hwPanel.RowStyles.Add((New-RowStyle Percent 100))
+[void]$hwPanel.RowStyles.Add((New-RowStyle Auto))
+$hwTitle = New-Label -Text 'Podzespoły' -Font ([Drawing.Font]::new('Segoe UI Semibold', 11))
+$hwTitle.Margin = [Windows.Forms.Padding]::new(0, 0, 0, 4)
+$hwBox = New-Object Windows.Forms.RichTextBox
+$hwBox.Dock = 'Fill'; $hwBox.ReadOnly = $true; $hwBox.BorderStyle = 'None'
+$hwBox.BackColor = $Script:Theme.Panel; $hwBox.ForeColor = $Script:Theme.Fg; $hwBox.Font = $Script:HwFont
+$hwBox.WordWrap = $true; $hwBox.ScrollBars = 'Vertical'; $hwBox.DetectUrls = $false
+$hwBox.Margin = [Windows.Forms.Padding]::new(0)
+$hwBtns = New-Object Windows.Forms.FlowLayoutPanel
+$hwBtns.AutoSize = $true; $hwBtns.WrapContents = $true; $hwBtns.Margin = [Windows.Forms.Padding]::new(0, 6, 0, 0)
+$bHwRefresh = New-Button -Text 'Odśwież' -Width 90
+$bHwCopy    = New-Button -Text 'Kopiuj' -Width 80
+$bHwSave    = New-Button -Text 'Zapisz…' -Width 90
+foreach ($b in $bHwRefresh, $bHwCopy, $bHwSave) { $b.Margin = [Windows.Forms.Padding]::new(0, 0, 6, 0); $hwBtns.Controls.Add($b) }
+$hwPanel.Controls.Add($hwTitle, 0, 0); $hwPanel.Controls.Add($hwBox, 0, 1); $hwPanel.Controls.Add($hwBtns, 0, 2)
+$Script:Ui.Hw = $hwBox
+$Script:Ui.HwButtons = @($bHwRefresh, $bHwCopy, $bHwSave)
+
+$outer = New-Object Windows.Forms.TableLayoutPanel
+$outer.Dock = 'Fill'; $outer.ColumnCount = 2; $outer.RowCount = 1
+$outer.Padding = [Windows.Forms.Padding]::new(0, 0, 14, 0)
+[void]$outer.ColumnStyles.Add((New-ColStyle Percent 100))
+[void]$outer.ColumnStyles.Add([Windows.Forms.ColumnStyle]::new([Windows.Forms.SizeType]::Absolute, 380))
+$outer.Controls.Add($root, 0, 0)
+$outer.Controls.Add($hwPanel, 1, 0)
+$form.Controls.Add($outer)
+
+function Add-HwText {
+    param([string]$Text, [Drawing.Color]$Color, [switch]$Bold)
+    $r = $Script:Ui.Hw
+    $r.SelectionStart = $r.TextLength; $r.SelectionLength = 0
+    $r.SelectionColor = $Color
+    $r.SelectionFont = $(if ($Bold) { $Script:HwFontBold } else { $Script:HwFont })
+    $r.AppendText($Text)
+}
+
+function Update-HardwarePanel {
+    # Zbiera sekcje po kolei i dopisuje je do panelu na bieżąco (CIM/WMI potrafi zająć kilka sekund).
+    $r = $Script:Ui.Hw
+    foreach ($b in $Script:Ui.HwButtons) { $b.Enabled = $false }
+    $startWasEnabled = $Script:Ui.Start.Enabled
+    $Script:Ui.Start.Enabled = $false
+    $r.Clear()
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine("Podzespoły – $env:COMPUTERNAME – $(Get-Date -Format 'yyyy-MM-dd HH:mm')")
+    $first = $true
+    foreach ($s in $Script:HardwareSections) {
+        if ($first) { $first = $false } else { Add-HwText -Text "`n" -Color $Script:Theme.Fg }
+        Add-HwText -Text "$($s.Title)`n" -Color $Script:Theme.Accent -Bold
+        [void]$sb.AppendLine(); [void]$sb.AppendLine("== $($s.Title) ==")
+        Invoke-UiPump
+        try {
+            $rows = @(& $s.Get)
+            if (-not $rows.Count) { Add-HwText -Text "  brak danych`n" -Color $Script:Theme.Muted; [void]$sb.AppendLine('  brak danych') }
+            foreach ($row in $rows) {
+                Add-HwText -Text "$($row[0]): " -Color $Script:Theme.Muted
+                Add-HwText -Text "$($row[1])`n" -Color $Script:Theme.Fg
+                [void]$sb.AppendLine("  $($row[0]): $($row[1])")
+            }
+        }
+        catch {
+            Add-HwText -Text "  błąd: $($_.Exception.Message)`n" -Color $Script:Theme.Err
+            [void]$sb.AppendLine("  błąd: $($_.Exception.Message)")
+        }
+        Invoke-UiPump
+    }
+    $r.SelectionStart = 0; $r.SelectionLength = 0
+    Set-ScrollTop -Box $r
+    $Script:HardwareText = $sb.ToString()
+    foreach ($b in $Script:Ui.HwButtons) { $b.Enabled = $true }
+    if (-not $Script:Busy) { $Script:Ui.Start.Enabled = $startWasEnabled }
+}
+
+$bHwRefresh.Add_Click({ Update-HardwarePanel; Write-Log 'Spis podzespołów odświeżony.' Dim })
+$bHwCopy.Add_Click({
+    if ($Script:HardwareText) {
+        [Windows.Forms.Clipboard]::SetText($Script:HardwareText)
+        Write-Log 'Spis podzespołów skopiowany do schowka.' Ok
+    }
+})
+$bHwSave.Add_Click({
+    if (-not $Script:HardwareText) { return }
+    $dlg = New-Object Windows.Forms.SaveFileDialog
+    $dlg.Title = 'Zapisz spis podzespołów'
+    $dlg.Filter = 'Plik tekstowy (*.txt)|*.txt|Wszystkie pliki (*.*)|*.*'
+    $dlg.FileName = "podzespoly-$env:COMPUTERNAME-$(Get-Date -Format 'yyyy-MM-dd').txt"
+    $dlg.InitialDirectory = [Environment]::GetFolderPath('Desktop')
+    if ($dlg.ShowDialog($Script:Ui.Form) -ne 'OK') { return }
+    try {
+        [IO.File]::WriteAllText($dlg.FileName, $Script:HardwareText, (New-Object Text.UTF8Encoding $true))
+        Write-Log "Spis podzespołów zapisany: $($dlg.FileName)" Ok
+    }
+    catch { Write-Log "Nie udało się zapisać spisu: $($_.Exception.Message)" Error }
+})
 
 # ---------------------------------------------------------------- logika uruchomienia
 function Set-Status { param([string]$Text) $Script:Ui.Status.Text = $Text; Invoke-UiPump }
@@ -702,6 +815,11 @@ $form.Add_Shown({
     $m = Get-Manifest
     Write-Log "Payload: $(@($m.items).Count) pozycji, zakładki: $(if ($m.bookmarks) { $m.bookmarks } else { 'brak' })" Dim
     Write-Log 'Zaznacz, co ma zostać wykonane, i kliknij „Start”.' Info
+    Set-Status 'Zbieranie spisu podzespołów…'
+    $hwSw = [Diagnostics.Stopwatch]::StartNew()
+    Update-HardwarePanel
+    Write-Log ("Spis podzespołów zebrany w {0:N1} s (panel po prawej; Kopiuj / Zapisz…)." -f $hwSw.Elapsed.TotalSeconds) Dim
+    Set-Status 'Gotowy.'
 })
 
 if ($AutoCloseSeconds -gt 0) {

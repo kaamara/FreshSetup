@@ -1,0 +1,3 @@
+# Bez normalizacji końców linii – pliki .ps1 mają zostać bajt w bajt takie,
+# jakie są (Windows PowerShell 5.1 wymaga też BOM UTF-8, patrz README).
+* -text

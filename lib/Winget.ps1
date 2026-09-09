@@ -93,6 +93,7 @@ function Install-WingetApp {
     foreach ($id in $ids) {
         $wgArgs = @('install', '--id', $id, '--exact', '--source', 'winget', '--silent',
                     '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity')
+        if ($App.Override) { $wgArgs += @('--override', [string]$App.Override) }   # własne przełączniki instalatora (zastępują domyślne winget)
         if ($App.Scope -eq 'user') {
             Write-Log '  instalator wymaga uruchomienia bez uprawnień administratora – uruchamiam jako zwykły użytkownik' Dim
             $r = Invoke-ExternalAsUser -FilePath $Winget -ArgumentList $wgArgs

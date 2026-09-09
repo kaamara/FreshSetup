@@ -1,0 +1,12 @@
+# Logi z uruchomień aplikacji
+logs/
+*.log
+
+# Prywatne dane z kolumny „Pliki i zakładki” – kopie plików, folderów i zakładek.
+# Nie trafiają do repozytorium; na nowym komputerze dodajesz je ponownie
+# albo kopiujesz cały folder payload\ ręcznie (pendrive, chmura).
+payload/*
+!payload/.gitkeep
+
+# Kopie zapasowe pliku zakładek Brave tworzone przy imporcie
+*.freshsetup-*.bak

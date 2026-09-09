@@ -97,7 +97,9 @@ function Invoke-External {
     )
     $out = [IO.Path]::GetTempFileName()
     $err = [IO.Path]::GetTempFileName()
-    $proc = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -RedirectStandardOutput $out -RedirectStandardError $err -PassThru -NoNewWindow
+    # Start-Process skleja argumenty spacjami bez cudzysłowów – argumenty ze spacjami trzeba objąć samemu.
+    $quoted = @($ArgumentList | ForEach-Object { if ($_ -match '\s' -and $_ -notmatch '^".*"$') { '"' + $_ + '"' } else { $_ } })
+    $proc = Start-Process -FilePath $FilePath -ArgumentList $quoted -RedirectStandardOutput $out -RedirectStandardError $err -PassThru -NoNewWindow
     $null = $proc.Handle
     $offset = 0
     $sw = [Diagnostics.Stopwatch]::StartNew()

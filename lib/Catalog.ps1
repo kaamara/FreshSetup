@@ -6,6 +6,7 @@
 #   Default     – czy domyślnie zaznaczone
 #   Fallback    – (opcjonalnie) zapasowe ID, gdyby główne nie istniało
 #   Scope       – (opcjonalnie) 'user' = instalator musi działać BEZ uprawnień administratora (np. Spotify)
+#   Override    – (opcjonalnie) własne przełączniki instalatora przekazywane przez `winget --override` (zastępują domyślne)
 #   Description – opis pokazywany pod listami
 
 $Script:AppCatalog = @(
@@ -31,4 +32,13 @@ $Script:AppCatalog = @(
        Description = 'Narzędzie Claude Code do terminala.' }
     @{ Id = 'spotify';    Name = 'Spotify';                WingetId = 'Spotify.Spotify';            Default = $true;  Scope = 'user'
        Description = 'Spotify. Instalator odmawia pracy jako administrator, więc uruchamiany jest jako zwykły użytkownik.' }
+    @{ Id = 'faceitac';   Name = 'FACEIT Anti-Cheat';      WingetId = 'FACEITLTD.FACEITAC';         Default = $true
+       Description = 'Sterownik/klient FACEIT Anti-Cheat (wymagany do gry na FACEIT). Po instalacji może być potrzebny restart.' }
+    @{ Id = 'faceit';     Name = 'FACEIT (klient)';        WingetId = 'FACEITLTD.FACEITClient';     Default = $false
+       Description = 'Aplikacja FACEIT (klient platformy). Sam anty-cheat jest osobną pozycją powyżej.' }
+    @{ Id = 'python';     Name = 'Python 3.14';            WingetId = 'Python.Python.3.14';         Default = $true
+       Override = '/quiet InstallAllUsers=1 PrependPath=1 Include_launcher=1 Include_test=0'
+       Description = 'Python 3.14 dla wszystkich użytkowników, dodany do PATH (polecenia python i py działają od razu w terminalu).' }
+    @{ Id = 'pymanager';  Name = 'Python Install Manager'; WingetId = 'Python.PythonInstallManager'; Default = $false
+       Description = 'Oficjalny menedżer instalacji Pythona (nowe „py”): pobiera wybraną wersję Pythona na żądanie. Alternatywa dla pozycji „Python 3.14”.' }
 )
