@@ -94,7 +94,6 @@ function Get-HwMemory {
         if (-not $t) { $t = $types[[int]$m.MemoryType] }
         if (-not $t) { $t = 'typ ' + $m.SMBIOSMemoryType }
         $ff = $forms[[int]$m.FormFactor]
-        # ConfiguredClockSpeed = faktyczne taktowanie (np. z profilu EXPO/XMP), Speed = nominalne wg SPD modułu.
         $speed = if ($m.ConfiguredClockSpeed -and $m.Speed -and $m.ConfiguredClockSpeed -ne $m.Speed) { "$($m.ConfiguredClockSpeed) MHz (nominalnie $($m.Speed) MHz)" }
                  elseif ($m.ConfiguredClockSpeed) { "$($m.ConfiguredClockSpeed) MHz" }
                  elseif ($m.Speed) { "$($m.Speed) MHz" } else { '? MHz' }
@@ -111,7 +110,7 @@ function Get-HwMemory {
 
 function Get-HwGpu {
     $rows = @()
-    # Rzeczywista ilość VRAM (AdapterRAM jest 32-bitowe i ucina powyżej 4 GB) z klucza klasy kart graficznych.
+    # Rzeczywista ilość VRAM z klucza klasy kart graficznych.
     $vram = @{}
     $classKey = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
     foreach ($k in (Get-ChildItem $classKey -ErrorAction SilentlyContinue)) {
@@ -181,7 +180,6 @@ function Get-HwDisks {
     foreach ($v in (Get-CimSafe Win32_LogicalDisk -Filter 'DriveType=3' | Sort-Object DeviceID)) {
         if (-not $v.Size) { continue }
         $pct = [math]::Round(100 * $v.FreeSpace / $v.Size)
-        # Uwaga: PowerShell traktuje cudzysłowy „ ” jak zwykłe " – w ciągach w podwójnych cudzysłowach nie wolno ich używać.
         $label = if ($v.VolumeName) { ', „' + $v.VolumeName + '”' } else { '' }
         $rows += , @("Wolumin $($v.DeviceID.TrimEnd(':'))", "$(Format-GiB $v.Size), wolne $(Format-GiB $v.FreeSpace) ($pct%), $($v.FileSystem)$label")
     }
@@ -205,7 +203,6 @@ function Get-HwPower {
 }
 
 function Get-HwMonitors {
-    # Trzyliterowe kody PnP producentów monitorów (EDID) -> nazwy.
     $vendors = @{ AUS = 'ASUS'; SAM = 'Samsung'; DEL = 'Dell'; GSM = 'LG'; LGD = 'LG'; BNQ = 'BenQ'; ACR = 'Acer'; AOC = 'AOC'; MSI = 'MSI'
                   PHL = 'Philips'; HWP = 'HP'; HPN = 'HP'; IVM = 'iiyama'; GBT = 'Gigabyte'; LEN = 'Lenovo'; VSC = 'ViewSonic'; SNY = 'Sony'
                   NEC = 'NEC'; EIZ = 'EIZO'; APP = 'Apple'; XMI = 'Xiaomi'; HSD = 'HannStar'; CMN = 'Chi Mei'; AUO = 'AU Optronics'; BOE = 'BOE' }
@@ -258,7 +255,7 @@ $Script:HardwareSections = @(
 )
 
 function Get-HardwareReportText {
-    # Pełny raport jako tekst (do schowka / pliku). Wolniejsze niż wersja progresywna w GUI, ale niezależne od okna.
+    # Pełny raport jako tekst
     $sb = New-Object System.Text.StringBuilder
     [void]$sb.AppendLine("Podzespoły – $env:COMPUTERNAME – $(Get-Date -Format 'yyyy-MM-dd HH:mm')")
     foreach ($s in $Script:HardwareSections) {

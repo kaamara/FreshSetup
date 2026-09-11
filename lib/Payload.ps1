@@ -1,8 +1,8 @@
 ﻿# Payload.ps1 – pliki/foldery/linki kopiowane na nowy komputer oraz plik zakładek Brave.
-# Wszystko leży w folderze payload\ obok aplikacji – wystarczy skopiować cały folder FreshSetup (np. na pendrive).
-#   payload\manifest.json  – lista pozycji i ich miejsc docelowych
-#   payload\files\<id>\…   – kopie dodanych plików/folderów
-#   payload\bookmarks\…    – plik zakładek
+# Wszystko leży w folderze payload\ obok aplikacji, wystarczy skopiować cały folder FreshSetup
+#   payload\manifest.json – lista pozycji i ich miejsc docelowych
+#   payload\files\<id>\…  – kopie dodanych plików/folderów
+#   payload\bookmarks\…   – plik zakładek
 
 $Script:PayloadDir       = Join-Path $Script:AppRoot 'payload'
 $Script:PayloadFiles     = Join-Path $Script:PayloadDir 'files'

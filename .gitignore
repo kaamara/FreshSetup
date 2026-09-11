@@ -3,8 +3,8 @@ logs/
 *.log
 
 # Prywatne dane z kolumny „Pliki i zakładki” – kopie plików, folderów i zakładek.
-# Nie trafiają do repozytorium; na nowym komputerze dodajesz je ponownie
-# albo kopiujesz cały folder payload\ ręcznie (pendrive, chmura).
+# Nie trafiają do repozytorium
+# albo kopiujesz cały folder payload\ ręcznie
 payload/*
 !payload/.gitkeep
 
