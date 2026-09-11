@@ -69,13 +69,9 @@ ID pakietu sprawdzisz poleceniem `winget search <nazwa>`. Pole `Scope = 'user'` 
 
 ## Repozytorium
 
-Kod mieszka w <https://github.com/kaamara/FreshSetup> (prywatne). Na nowym komputerze wystarczy:
-
 ```powershell
 git clone https://github.com/kaamara/FreshSetup.git
 ```
-
-Uwaga: `payload\` i `logs\` są w `.gitignore`, więc **Twoje pliki i zakładki nie trafiają do repozytorium**. To celowe – repo trzyma tylko kod, a prywatne dane przenosisz sam (pendrive, chmura) albo dodajesz od nowa w aplikacji. Jeśli kiedyś zechcesz mimo wszystko wersjonować konkretną rzecz, wymuś to jawnie: `git add -f payload/bookmarks/bookmarks.html`.
 
 Pliki `.ps1` muszą zachować BOM UTF-8 i nie mogą być normalizowane – pilnuje tego `.gitattributes` (`* -text`).
 
